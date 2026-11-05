@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Radfahrten aus GPX-Dateien analysieren wie ein Profi-Trainer: Leistung, Herzfrequenz, Zonen, TSS, Power-Kurve, W′bal und Wind. Alle Daten bleiben im eigenen Browser.">
+<meta name="theme-color" content="#0d1117">
+<title>RideLab – Radsport-Analyse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<aside id="sidebar">
+  <div class="logo">Ride<span>Lab</span></div>
+
+  <div class="sidebar-actions">
+    <button id="btn-import" class="btn btn-primary">
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 1a.75.75 0 0 1 .75.75v6.69l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V1.75A.75.75 0 0 1 8 1ZM2 12.75a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 .75.75v1.5A.75.75 0 0 1 13.25 15H2.75A.75.75 0 0 1 2 14.25v-1.5Z"/></svg>
+      GPX importieren
+    </button>
+    <button id="btn-demo" class="btn btn-ghost">Demo-Fahrten laden</button>
+  </div>
+
+  <nav>
+    <button id="nav-overview" class="nav-item">
+      <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><path d="M1 13.5V8h3v5.5H1Zm5.5 0V3h3v10.5h-3ZM12 13.5V6h3v7.5h-3Z"/></svg>
+      Übersicht
+    </button>
+  </nav>
+
+  <div class="ride-list-label">Fahrten <span id="ride-count"></span></div>
+  <div id="ride-list"></div>
+
+  <div class="backup-row">
+    <button id="btn-backup" class="btn btn-ghost btn-sm" title="Alle Fahrten und das Athleten-Profil als Datei sichern">Backup sichern</button>
+    <button id="btn-restore" class="btn btn-ghost btn-sm" title="Backup- oder Fahrt-Datei (.json) einlesen">Wiederherstellen</button>
+  </div>
+
+  <button id="btn-settings" class="settings-btn">
+    <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><path d="M8 5.25A2.75 2.75 0 1 0 8 10.75 2.75 2.75 0 0 0 8 5.25Zm0 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z"/><path d="M6.9.88a1 1 0 0 1 .98-.8h.24a1 1 0 0 1 .98.8l.24 1.2c.44.14.86.32 1.25.55l1.02-.68a1 1 0 0 1 1.26.12l.17.17a1 1 0 0 1 .12 1.26l-.68 1.02c.23.39.41.81.55 1.25l1.2.24a1 1 0 0 1 .8.98v.24a1 1 0 0 1-.8.98l-1.2.24c-.14.44-.32.86-.55 1.25l.68 1.02a1 1 0 0 1-.12 1.26l-.17.17a1 1 0 0 1-1.26.12l-1.02-.68c-.39.23-.81.41-1.25.55l-.24 1.2a1 1 0 0 1-.98.8h-.24a1 1 0 0 1-.98-.8l-.24-1.2a5.9 5.9 0 0 1-1.25-.55l-1.02.68a1 1 0 0 1-1.26-.12l-.17-.17a1 1 0 0 1-.12-1.26l.68-1.02a5.9 5.9 0 0 1-.55-1.25l-1.2-.24a1 1 0 0 1-.8-.98v-.24a1 1 0 0 1 .8-.98l1.2-.24c.14-.44.32-.86.55-1.25l-.68-1.02a1 1 0 0 1 .12-1.26l.17-.17a1 1 0 0 1 1.26-.12l1.02.68c.39-.23.81-.41 1.25-.55l.24-1.2Z" fill-rule="evenodd"/></svg>
+    Athleten-Profil
+    <span id="settings-summary"></span>
+  </button>
+</aside>
+
+<main id="main">
+
+  <!-- Leerer Zustand -->
+  <section id="view-empty" class="view">
+    <div class="empty-state">
+      <div class="empty-icon">🚴</div>
+      <h1>Willkommen bei RideLab</h1>
+      <p>Importiere deine GPX-Dateien und analysiere deine Radfahrten wie ein Profi-Trainer:<br>
+      Leistung, Herzfrequenz, Trainingszonen, TSS, Power-Kurve, Route und mehr.</p>
+      <div class="empty-actions">
+        <button class="btn btn-primary btn-lg" onclick="document.getElementById('file-input').click()">GPX-Dateien importieren</button>
+        <button class="btn btn-ghost btn-lg" onclick="loadDemoRides()">Demo-Fahrten ansehen</button>
+      </div>
+      <p class="hint">Tipp: Du kannst GPX-Dateien (oder RideLab-Exporte) auch einfach per Drag&nbsp;&amp;&nbsp;Drop hier ins Fenster ziehen.<br>
+      Alle Daten bleiben lokal in deinem Browser – nichts wird hochgeladen.</p>
+    </div>
+  </section>
+
+  <!-- Übersicht -->
+  <section id="view-overview" class="view">
+    <header class="page-header">
+      <h1>Übersicht</h1>
+      <span class="subtitle" id="ov-subtitle"></span>
+    </header>
+    <div class="stat-grid" id="ov-totals"></div>
+    <div class="panel-row">
+      <div class="panel">
+        <h2>Wochenumfang <span class="panel-sub">Distanz &amp; Belastung (TSS), letzte 12 Wochen</span></h2>
+        <div class="chart-box"><canvas id="chart-weekly"></canvas></div>
+      </div>
+    </div>
+    <div class="panel-row">
+      <div class="panel">
+        <h2>Formkurve <span class="panel-sub">Fitness (CTL) · Ermüdung (ATL) · Frische (TSB)</span></h2>
+        <div class="chart-box"><canvas id="chart-pmc"></canvas></div>
+        <p class="panel-note">CTL = 42-Tage-Belastungsschnitt („Fitness“), ATL = 7-Tage-Schnitt („Ermüdung“), TSB = CTL − ATL („Frische/Form“). Positiv = erholt, stark negativ = hohe Ermüdung.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Alle Fahrten</h2>
+      <div class="table-wrap">
+        <table id="ov-table">
+          <thead><tr><th>Datum</th><th>Fahrt</th><th class="num">km</th><th class="num">Hm</th><th class="num">Zeit</th><th class="num">Ø W</th><th class="num">NP</th><th class="num">Ø HF</th><th class="num">TSS</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Fahrt-Detail -->
+  <section id="view-ride" class="view">
+    <header class="page-header ride-header">
+      <div>
+        <input id="ride-name" class="ride-name-input" title="Klicken zum Umbenennen">
+        <div class="subtitle" id="ride-date"></div>
+      </div>
+      <div class="ride-actions">
+      <button id="btn-export" class="btn btn-ghost" title="Fahrt als Datei speichern, um sie weiterzugeben">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 11a.75.75 0 0 1-.75-.75V3.56L5.03 5.78a.75.75 0 0 1-1.06-1.06l3.5-3.5a.75.75 0 0 1 1.06 0l3.5 3.5a.75.75 0 0 1-1.06 1.06L8.75 3.56v6.69A.75.75 0 0 1 8 11ZM2 12.75a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-.75.75H2.75a.75.75 0 0 1-.75-.75v-1.5Z"/></svg>
+        Exportieren
+      </button>
+      <button id="btn-delete" class="btn btn-danger-ghost" title="Fahrt löschen">
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M6.5 1.75V3h3V1.75a.25.25 0 0 0-.25-.25h-2.5a.25.25 0 0 0-.25.25ZM11 3V1.75A1.75 1.75 0 0 0 9.25 0h-2.5A1.75 1.75 0 0 0 5 1.75V3H1.75a.75.75 0 0 0 0 1.5h.443l.694 9.71A1.75 1.75 0 0 0 4.633 15.8h6.734a1.75 1.75 0 0 0 1.746-1.59l.694-9.71h.443a.75.75 0 0 0 0-1.5H11Z"/></svg>
+        Löschen
+      </button>
+      </div>
+    </header>
+
+    <div class="stat-grid" id="ride-stats"></div>
+
+    <div class="panel-row two-col">
+      <div class="panel map-panel">
+        <div class="panel-head">
+          <h2>Route</h2>
+          <select id="map-color-mode" class="select-sm">
+            <option value="solid">Einfarbig</option>
+            <option value="pw">Leistung</option>
+            <option value="hr">Herzfrequenz</option>
+            <option value="spd">Geschwindigkeit</option>
+            <option value="grade">Steigung</option>
+          </select>
+        </div>
+        <div id="map"></div>
+      </div>
+      <div class="panel">
+        <h2>Trainer-Analyse</h2>
+        <div id="insights"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Analyse <span class="panel-sub">Bewege die Maus über das Diagramm – die Position wird auf der Karte markiert</span></h2>
+        <div class="chip-row" id="series-toggles"></div>
+      </div>
+      <div class="chart-box tall"><canvas id="chart-main"></canvas></div>
+    </div>
+
+    <div class="panel" id="pro-panel">
+      <div class="panel-head">
+        <h2>Pro-Analyse <span class="panel-sub">Critical Power · W′bal · Intervalle · Ermüdungsresistenz · Wind · Aero</span></h2>
+        <span id="pro-status" class="badge"></span>
+      </div>
+      <div id="pro-content"></div>
+    </div>
+
+    <div class="panel-row two-col">
+      <div class="panel">
+        <h2>Leistungszonen <span class="panel-sub" id="pz-sub"></span></h2>
+        <div id="power-zones" class="zone-bars"></div>
+      </div>
+      <div class="panel">
+        <h2>Herzfrequenzzonen <span class="panel-sub" id="hz-sub"></span></h2>
+        <div id="hr-zones" class="zone-bars"></div>
+      </div>
+    </div>
+
+    <div class="panel-row two-col">
+      <div class="panel">
+        <h2>Power-Kurve <span class="panel-sub">Beste Durchschnittsleistung je Dauer</span></h2>
+        <div class="chart-box"><canvas id="chart-mmp"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2>Bestwerte</h2>
+        <div id="best-values"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Abschnitte <span class="panel-sub" id="splits-sub"></span></h2>
+      <div class="table-wrap">
+        <table id="splits-table">
+          <thead><tr><th>Abschnitt</th><th class="num">Zeit</th><th class="num">Ø km/h</th><th class="num">Ø W</th><th class="num">Ø HF</th><th class="num">Hm</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Athleten-Profil Modal -->
+<div id="settings-modal" class="modal-backdrop" hidden>
+  <div class="modal">
+    <h2>Athleten-Profil</h2>
+    <p class="modal-sub">Diese Werte werden für Trainingszonen, TSS/IF, W/kg und Kalorien verwendet.</p>
+    <form id="settings-form">
+      <label>FTP – Schwellenleistung (Watt)
+        <input type="number" name="ftp" min="50" max="600" required>
+        <small>Falls unbekannt: 20-min-Bestleistung × 0,95. RideLab schlägt nach jeder Fahrt einen Wert vor.</small>
+      </label>
+      <label>Maximale Herzfrequenz (S/min)
+        <input type="number" name="hrmax" min="120" max="230" required>
+      </label>
+      <div class="form-row">
+        <label>Gewicht (kg)
+          <input type="number" name="weight" min="30" max="200" step="0.1" required>
+        </label>
+        <label>Alter
+          <input type="number" name="age" min="10" max="100" required>
+        </label>
+      </div>
+      <label>Geschlecht (für Kalorienberechnung ohne Powermeter)
+        <select name="sex">
+          <option value="m">Männlich</option>
+          <option value="f">Weiblich</option>
+        </select>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="btn-settings-cancel">Abbrechen</button>
+        <button type="submit" class="btn btn-primary">Speichern</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="drop-overlay" hidden><div>GPX- oder RideLab-Dateien hier ablegen</div></div>
+<div id="toast-container"></div>
+<input type="file" id="file-input" accept=".gpx,.json,application/gpx+xml,application/json" multiple hidden>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

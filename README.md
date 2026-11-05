@@ -22,17 +22,15 @@ Dann `http://localhost:8188/` öffnen. Der Server liefert nur die Dateien aus
 `web/` aus. Wichtig ist die feste Adresse: Der Browser speichert die Fahrten
 pro Adresse, deine lokalen Fahrten liegen unter `http://localhost:8188/`.
 
-## Mit anderen teilen (online stellen)
+## Online-Version
 
-Den Ordner **`web/`** auf einen kostenlosen Hoster für statische Seiten laden:
+- **Live:** https://endless108.github.io/ridelab/
+- **Repository:** https://github.com/endless108/ridelab
 
-- **Netlify Drop** (am einfachsten, ohne Git): https://app.netlify.com/drop
-  öffnen, mit kostenlosem Konto anmelden und den Ordner `web` ins Fenster
-  ziehen. Du bekommst sofort eine Adresse wie `https://ridelab-xyz.netlify.app`.
-  Später aktualisieren: im Netlify-Projekt unter „Deploys" den Ordner erneut
-  hineinziehen.
-- **Cloudflare Pages**: „Create project → Direct Upload", Ordner `web` hochladen.
-- **GitHub Pages**: Inhalt von `web/` in ein Repository legen und Pages aktivieren.
+Jeder Push auf `main` veröffentlicht den Ordner `web/` automatisch über
+GitHub Actions (`.github/workflows/pages.yml`). Nach etwa einer Minute ist die
+neue Version online. Der Ordner `web/` funktioniert genauso auf jedem anderen
+Hoster für statische Seiten (Netlify, Cloudflare Pages).
 
 Deine eigenen Fahrten mitnehmen: lokal links unten **Backup sichern**, auf der
 Online-Version **Wiederherstellen** und die Backup-Datei auswählen.
